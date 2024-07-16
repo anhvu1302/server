@@ -14,7 +14,6 @@ const dayjs = require("dayjs");
 const handleErrorResponse = require("../utils/handleErrorResponse");
 const mailer = new Mailer();
 
-
 const checkUserInfo = async (req, res) => {
   const { UserName, PhoneNumber, Email } = req.query;
   try {
@@ -84,7 +83,7 @@ const getUserInfo = async (req, res) => {
   let token;
   try {
     let user;
-    console.log(req.user && !req.session.user)
+    console.log("user:", req.user && !req.session.user);
     if (req.user && !req.session.user) {
       const providerMappings = {
         facebook: "fb",
@@ -401,7 +400,7 @@ const register = async (req, res) => {
         SecretKey: secret,
         OTP: smartOTP,
         UserType: "CUSTOMER",
-        LoginAt:sequelize.literal("NOW()"),
+        LoginAt: sequelize.literal("NOW()"),
         CreatedAt: sequelize.literal("NOW()"),
       },
       { transaction: t }
