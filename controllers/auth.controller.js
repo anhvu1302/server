@@ -84,6 +84,7 @@ const getUserInfo = async (req, res) => {
   let token;
   try {
     let user;
+    console.log(req.user && !req.session.user)
     if (req.user && !req.session.user) {
       const providerMappings = {
         facebook: "fb",
