@@ -1,13 +1,23 @@
 const { rootRouter } = require("./routers");
+const { roundRobin, leastConnection } = require("./loadBalancing");
+const { sequelize } = require("./models");
 const bodyParser = require("body-parser");
+const cluster = require("cluster");
 const compression = require("compression");
 const cookieSession = require("cookie-session");
 const cors = require("cors");
 const express = require("express");
 const logger = require("morgan");
+const os = require("os");
 const passport = require("./utils/auth/passport");
 const path = require("path");
 require("dotenv").config();
+
+const loadBalancingAlgorithm =
+  require("./config/loadBalancingConfig.json").LeastConnection; // Change load balancing algorithm here
+
+const numCPUs = os.cpus().length;
+
 
 const app = express();
 
@@ -39,4 +49,20 @@ app.use("/public", express.static(publicPathDirectory));
 
 app.use("/api/v1", rootRouter);
 
-module.exports = app;
+
+
+const port = process.env.PORT || 4000;
+app.listen(port, () => {
+  (async () => {
+    try {
+      await sequelize.authenticate();
+      console.log("Connected to database successfully!");
+    } catch (error) {
+      console.error("Failed to connect to database.");
+      process.exit(1);
+    }
+  })();
+  console.log(
+    `Server started and listening on port http://localhost:${port}`
+  );
+});
