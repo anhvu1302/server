@@ -1,17 +1,16 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "./",
-        "use": "@vercel/node"
-      }
-    ],
-    "routes": [
-      { "src": "/(.*)", "dest": "/" }
-    ],
-    "env": {
+  "version": 2,
+  "builds": [
+    {
+      "src": "./",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "/" }
+  ],
+  "env": {
     "NODE_ENV": "production",
-    "NODE_VERSION": "16.x"
+    "NODE_VERSION": "1.x"
   }
-  }
-  
+}
