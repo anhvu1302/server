@@ -45,6 +45,7 @@ authRouter.get(
     failureRedirect: "/login/failed",
   }),
   (req, res) => {
+    console.log("call back",req.user)
     const stateObject = {
       success: true,
       service: "google",
