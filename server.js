@@ -17,7 +17,7 @@ const loadBalancingAlgorithm =
   require("./config/loadBalancingConfig.json").LeastConnection; // Change load balancing algorithm here
 
 const numCPUs = os.cpus().length;
-
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(",") || [];
 
 const app = express();
 
@@ -38,7 +38,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(
   cors({
-    origin: process.env.ALLOWED_ORIGINS.split(','),
+    origin: allowedOrigins,
     methods: "GET,POST,PUT,DELETE",
     credentials: true,
   })
@@ -48,8 +48,6 @@ const publicPathDirectory = path.join(__dirname, "public");
 app.use("/public", express.static(publicPathDirectory));
 
 app.use("/api/v1", rootRouter);
-
-
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => {
@@ -62,7 +60,5 @@ app.listen(port, () => {
       process.exit(1);
     }
   })();
-  console.log(
-    `Server started and listening on port http://localhost:${port}`
-  );
+  console.log(`Server started and listening on port http://localhost:${port}`);
 });
