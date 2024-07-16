@@ -17,7 +17,7 @@ const loadBalancingAlgorithm =
   require("./config/loadBalancingConfig.json").LeastConnection; // Change load balancing algorithm here
 
 const numCPUs = os.cpus().length;
-const allowedOrigins = process.env.ALLOWED_ORIGINS.split(",") || [];
+const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : [];
 
 const app = express();
 
@@ -30,8 +30,6 @@ app.use(
     name: "session",
     keys: ["vavshop"],
     maxAge: 24 * 60 * 60 * 100,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
   })
 );
 app.use(passport.initialize());
