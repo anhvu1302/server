@@ -29,7 +29,10 @@ app.use(
   cookieSession({
     name: "session",
     keys: ["vavshop"],
-    maxAge: 24 * 60 * 60 * 100,
+    maxAge: 24 * 60 * 60 * 1000, 
+    sameSite: 'none',
+    secure: true, 
+    domain: '.free.nf'
   })
 );
 app.use(passport.initialize());
