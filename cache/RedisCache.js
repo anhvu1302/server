@@ -11,6 +11,7 @@ class RedisCache {
 
   async initializeRedisClient() {
     const redisURL = `redis://${process.env.REDIS_USERNAME}:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}`;
+    // const redisURL = `redis://127.0.0.1:6379`;
     if (redisURL) {
       this.redisClient = createClient({ url: redisURL }).on("error", (e) => {
         console.error(`Failed to create the Redis client with error:`);

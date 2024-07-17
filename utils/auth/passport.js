@@ -15,6 +15,7 @@ const PasswordEncryptor = require("../PasswordEncryptor");
 require("dotenv").config();
 
 const createUserFormThirdParty = async (profile, provider) => {
+  const t = await sequelize.transaction();
   try {
     const providerMappings = {
       facebook: "fb",
@@ -53,35 +54,43 @@ const createUserFormThirdParty = async (profile, provider) => {
         process.env.APP_SECRET_KEY
       );
 
-      await User.create({
-        UserId,
-        UserName,
-        Password: hashedPassword,
-        FullName: profile.displayName,
-        DOB: null,
-        Gender: null,
-        Address: "",
-        PhoneNumber: null,
-        Email,
-        Avatar: profile.photos[0].value,
-        SecretKey: secret,
-        OTP: smartOTP,
-        UserType: "CUSTOMER",
-        VerifiedAt: sequelize.literal("NOW()"),
-        LoginAt:sequelize.literal("NOW()"),
-        CreatedAt: sequelize.literal("NOW()"),
-      });
+      await User.create(
+        {
+          UserId,
+          UserName,
+          Password: hashedPassword,
+          FullName: profile.displayName,
+          DOB: null,
+          Gender: null,
+          Address: "",
+          PhoneNumber: null,
+          Email,
+          Avatar: profile.photos[0].value,
+          SecretKey: secret,
+          OTP: smartOTP,
+          UserType: "CUSTOMER",
+          VerifiedAt: sequelize.literal("NOW()"),
+          LoginAt: sequelize.literal("NOW()"),
+          CreatedAt: sequelize.literal("NOW()"),
+        },
+        { transaction: t }
+      );
       const permissionGroup = await PermissionGroup.findOne({
         where: {
           PermissionGroupName: "CUSTOMER",
         },
       });
-      await GroupHasUser.create({
-        PermissionGroupId: permissionGroup.PermissionGroupId,
-        UserId,
-      });
+      await GroupHasUser.create(
+        {
+          PermissionGroupId: permissionGroup.PermissionGroupId,
+          UserId,
+        },
+        { transaction: t }
+      );
+      await t.commit();
     }
   } catch (error) {
+    await t.rollback();
     console.log("Error creating user from third-party");
   }
 };
@@ -95,7 +104,7 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        createUserFormThirdParty(profile, "google");
+        await createUserFormThirdParty(profile, "google");
         done(null, profile);
       } catch (error) {
         console.log("Error creating user from third-party");
@@ -111,9 +120,9 @@ passport.use(
       callbackURL: process.env.FACEBOOK_CALLBACK_URL,
       profileFields: ["id", "displayName", "photos", "email"],
     },
-    function (accessToken, refreshToken, profile, done) {
+    async (accessToken, refreshToken, profile, done) => {
       try {
-        createUserFormThirdParty(profile, "facebook");
+        await createUserFormThirdParty(profile, "facebook");
         done(null, profile);
       } catch (error) {
         console.log("Error creating user from third-party");

@@ -13,6 +13,9 @@ const {
   sendOTPResetPassword,
   getUserInfo,
   verifyRegistrationToken,
+  googleCallback,
+  githubCallback,
+  facebookCallback,
 } = require("../controllers/auth.controller");
 const {
   existingUserAccount,
@@ -44,23 +47,7 @@ authRouter.get(
   passport.authenticate("google", {
     failureRedirect: "/login/failed",
   }),
-  (req, res) => {
-    console.log("call back",req.user)
-    const stateObject = {
-      success: true,
-      service: "google",
-      createdAt: new Date(),
-    };
-
-    const encryptedState = CryptoJS.AES.encrypt(
-      JSON.stringify(stateObject),
-      process.env.APP_SECRET_KEY
-    ).toString();
-
-    res.redirect(
-      `${process.env.FRONTEND_URL}?state=${encodeURIComponent(encryptedState)}`
-    );
-  }
+  googleCallback
 );
 
 authRouter.get(
@@ -73,7 +60,8 @@ authRouter.get(
   passport.authenticate("github", {
     successRedirect: process.env.FRONTEND_URL,
     failureRedirect: "/login/failed",
-  })
+  }),
+  githubCallback
 );
 
 authRouter.get(
@@ -86,7 +74,8 @@ authRouter.get(
   passport.authenticate("facebook", {
     successRedirect: process.env.FRONTEND_URL,
     failureRedirect: "/login/failed",
-  })
+  }),
+  facebookCallback
 );
 
 module.exports = authRouter;

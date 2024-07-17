@@ -82,42 +82,10 @@ const getUserInfo = async (req, res) => {
   const accessToken = req.header("x-access-token");
   let token;
   try {
-    let user;
-    console.log("user:", req.user && !req.session.user);
-    if (req.user && !req.session.user) {
-      const providerMappings = {
-        facebook: "fb",
-        google: "gg",
-        github: "gh",
-      };
-      const mappedProvider = providerMappings[req.user.provider] || "unknown";
-      const UserName = `${mappedProvider}_${req.user.id}`;
-      const Email = req.user.emails[0].value;
-      user = await User.findOne({
-        where: {
-          [Op.or]: {
-            UserName,
-            Email,
-          },
-        },
-      });
-
-      const expDate = eval(process.env.JWT_EXPIRED) || 24 * 60 * 60;
-      token = jwt.sign(
-        {
-          UserId: user.UserId,
-          UserName: user.UserName,
-          UserType: user.UserType,
-        },
-        process.env.APP_SECRET_KEY,
-        { expiresIn: expDate }
-      );
-    } else {
-      const decoded = jwt.verify(accessToken, process.env.APP_SECRET_KEY);
-      user = await User.findOne({
-        where: { UserId: decoded.UserId },
-      });
-    }
+    const decoded = jwt.verify(accessToken, process.env.APP_SECRET_KEY);
+    const user = await User.findOne({
+      where: { UserId: decoded.UserId },
+    });
     if (!user) {
       return res.status(404).send({ message: "User does not exist." });
     }
@@ -167,6 +135,80 @@ const getUserInfo = async (req, res) => {
   } catch (error) {
     return handleErrorResponse(res, 500, error);
   }
+};
+const handleOAuthCallback = async (req, res) => {
+  try {
+    const providerMappings = {
+      facebook: "fb",
+      google: "gg",
+      github: "gh",
+    };
+    const mappedProvider = providerMappings[req.user.provider] || "unknown";
+    const UserName = `${mappedProvider}_${req.user.id}`;
+    const Email = req.user.emails[0].value;
+    
+    const user = await User.findOne({
+      where: {
+        [Op.or]: {
+          UserName,
+          Email,
+        },
+      },
+    });
+
+    let message = "Login successful";
+
+    if (!user) {
+      message = "User does not exist.";
+    }
+    if (user && user.DeletedAt) {
+      message = "The account no longer exists. Please contact admin.";
+    }
+    if (user && user.BlockedAt) {
+      message = "Your account is banned. Please contact admin.";
+    }
+
+    const expDate = eval(process.env.JWT_EXPIRED) || 24 * 60 * 60;
+    const token = jwt.sign(
+      {
+        UserId: user.UserId,
+        UserName: user.UserName,
+        UserType: user.UserType,
+      },
+      process.env.APP_SECRET_KEY,
+      { expiresIn: expDate }
+    );
+
+    const stateObject = {
+      message,
+      token,
+      createdAt: new Date(),
+    };
+
+    const encryptedState = CryptoJS.AES.encrypt(
+      JSON.stringify(stateObject),
+      process.env.APP_SECRET_KEY
+    ).toString();
+
+    res.redirect(
+      `${process.env.FRONTEND_URL}?state=${encodeURIComponent(encryptedState)}`
+    );
+  } catch (error) {
+    console.error("Error handling OAuth callback:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+const googleCallback = async (req, res) => {
+  await handleOAuthCallback(req, res);
+};
+
+const githubCallback = async (req, res) => {
+  await handleOAuthCallback(req, res);
+};
+
+const facebookCallback = async (req, res) => {
+  await handleOAuthCallback(req, res);
 };
 
 const login = async (req, res) => {
@@ -540,6 +582,9 @@ const verifyRegistrationToken = async (req, res) => {
 };
 
 module.exports = {
+  googleCallback,
+  githubCallback,
+  facebookCallback,
   checkUserInfo,
   forgotPassword,
   getUserInfo,

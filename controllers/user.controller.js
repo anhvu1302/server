@@ -1043,7 +1043,7 @@ const updateUser = async (req, res) => {
         }
       })
     );
-
+    await cacheManager.invalidateCache();
     await t.commit();
     res.status(200).send({ message: "Updated successfully" });
   } catch (error) {
