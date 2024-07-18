@@ -56,7 +56,7 @@ vnpayRouter.post("/create_payment_url", function (req, res, next) {
   res.status(200).send(vnpUrl);
 });
 
-vnpayRouter.get("/vnpay_return", async (req, res, next) => {
+vnpayRouter.get("/vnpay-return", async (req, res, next) => {
   let vnp_Params = req.query;
   let secureHash = vnp_Params["vnp_SecureHash"];
 
