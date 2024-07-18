@@ -57,68 +57,94 @@ vnpayRouter.post("/create_payment_url", function (req, res, next) {
 });
 
 vnpayRouter.get("/vnpay-return", async (req, res, next) => {
-  let vnp_Params = req.query;
-  let secureHash = vnp_Params["vnp_SecureHash"];
+  try {
+    let vnp_Params = req.query;
+    let secureHash = vnp_Params["vnp_SecureHash"];
 
-  delete vnp_Params["vnp_SecureHash"];
-  delete vnp_Params["vnp_SecureHashType"];
+    delete vnp_Params["vnp_SecureHash"];
+    delete vnp_Params["vnp_SecureHashType"];
 
-  vnp_Params = sortObject(vnp_Params);
+    vnp_Params = sortObject(vnp_Params);
+    let signData = querystring.stringify(vnp_Params, { encode: false });
 
-  let signData = querystring.stringify(vnp_Params, { encode: false });
-  let hmac = CryptoJS.HmacSHA512(signData, secretKey);
-  let signed = hmac.toString(CryptoJS.enc.Hex);
-  if (secureHash === signed) {
-    if (vnp_Params["vnp_ResponseCode"] === "00") {
-      const t = await sequelize.transaction();
-      const orderId = vnp_Params["vnp_OrderInfo"].split("_")[1];
+    let hmac = CryptoJS.HmacSHA512(signData, secretKey);
+    let signed = hmac.toString(CryptoJS.enc.Hex);
 
-      try {
-        await Order.update(
-          { PaymentAt: sequelize.literal("NOW()") },
-          {
+    // Verify secure hash
+    if (secureHash === signed) {
+      if (vnp_Params["vnp_ResponseCode"] === "00") {
+        const t = await sequelize.transaction();
+        const orderId = vnp_Params["vnp_OrderInfo"].split("_")[1];
+
+        try {
+          const order = await Order.findOne({
             where: {
               OrderId: orderId,
             },
-            transaction: t,
+          });
+          if (!order) {
+            return res.status(404).json({
+              message: "Order not found.",
+              vnp_ResponseCode: "97",
+              vnp_OrderInfo: vnp_Params["vnp_OrderInfo"],
+            });
           }
-        );
 
-        await OrderState.create(
-          {
-            OrderId: orderId,
-            Status: "Thanh toán đơn hàng thành công qua VNPAY",
-            CreatedAt: sequelize.literal("NOW()"),
-          },
-          { transaction: t }
-        );
+          if (order.PaymentAt) {
+            await t.rollback();
+            return res
+              .status(200)
+              .send({
+                message: "The order has been paid.",
+                vnp_ResponseCode: vnp_Params["vnp_ResponseCode"],
+                vnp_OrderInfo: vnp_Params["vnp_OrderInfo"],
+              });
+          }
 
-        await t.commit();
-        return res
-          .status(200)
-          .send({
+          order.PaymentAt = new Date();
+          await order.save({ transaction: t });
+
+          await OrderState.create(
+            {
+              OrderId: orderId,
+              Status: "Thanh toán đơn hàng thành công qua VNPAY",
+              CreatedAt: sequelize.literal("NOW()"),
+            },
+            { transaction: t }
+          );
+
+          await t.commit();
+
+          return res.status(200).json({
             message: "Payment successful.",
             vnp_ResponseCode: vnp_Params["vnp_ResponseCode"],
             vnp_OrderInfo: vnp_Params["vnp_OrderInfo"],
           });
-      } catch (error) {
-        await t.rollback();
-        handleErrorResponse(res, 500, error);
+        } catch (error) {
+          console.log(error);
+          await t.rollback();
+          handleErrorResponse(res, 500, error);
+        }
+      } else {
+        return res.status(200).json({
+          message: "Success",
+          vnp_ResponseCode: vnp_Params["vnp_ResponseCode"],
+          vnp_OrderInfo: vnp_Params["vnp_OrderInfo"],
+        });
       }
+    } else {
+      return res.status(200).json({
+        message: "Success",
+        vnp_ResponseCode: "97",
+        vnp_OrderInfo: vnp_Params["vnp_OrderInfo"],
+      });
     }
-    return res.status(200).send({
-      message: "Success",
-      vnp_ResponseCode: vnp_Params["vnp_ResponseCode"],
-      vnp_OrderInfo: vnp_Params["vnp_OrderInfo"],
-    });
-  } else {
-    return res.status(200).send({
-      message: "Success",
-      vnp_ResponseCode: "97",
-      vnp_OrderInfo: vnp_Params["vnp_OrderInfo"],
-    });
+  } catch (error) {
+    console.log(error);
+    handleErrorResponse(res, 500, error);
   }
 });
+
 function sortObject(obj) {
   let sorted = {};
   let str = [];
