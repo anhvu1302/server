@@ -146,7 +146,7 @@ const handleOAuthCallback = async (req, res) => {
     const mappedProvider = providerMappings[req.user.provider] || "unknown";
     const UserName = `${mappedProvider}_${req.user.id}`;
     const Email = req.user.emails[0].value;
-    
+
     const user = await User.findOne({
       where: {
         [Op.or]: {
@@ -220,7 +220,7 @@ const login = async (req, res) => {
 
     const isAuthn = PasswordEncryptor.verifyPassword(
       Password,
-      user.Password,
+      user.Password || "",
       process.env.APP_SECRET_KEY
     );
     if (!isAuthn || !user) {
