@@ -1059,6 +1059,9 @@ const deleteUser = async (req, res) => {
         UserId,
       },
     });
+    if (!user) {
+      return res.status(404).send({ message: "User not found" });
+    }
     user.DeletedAt = new Date();
     await user.save();
     await cacheManager.invalidateCache();
@@ -1075,6 +1078,9 @@ const restoreUser = async (req, res) => {
         UserId,
       },
     });
+    if (!user) {
+      return res.status(404).send({ message: "User not found" });
+    }
     user.DeletedAt = null;
     await user.save();
     await cacheManager.invalidateCache();
@@ -1083,8 +1089,80 @@ const restoreUser = async (req, res) => {
     handleErrorResponse(res, 500, error);
   }
 };
+const verifyUser = async (req, res) => {
+  const { UserId } = req.params;
+  try {
+    const user = await User.findOne({
+      where: {
+        UserId,
+      },
+    });
+    if (!user) {
+      return res.status(404).send({ message: "User not found" });
+    }
+
+    if (user.VerifiedAt) {
+      return res.status(400).send({ message: "User is already verified" });
+    }
+
+    user.VerifiedAt = new Date();
+    await user.save();
+    await cacheManager.invalidateCache();
+    return res.status(200).send({ message: "User verified successfully" });
+  } catch (error) {
+    handleErrorResponse(res, 500, error);
+  }
+};
+const banUser = async (req, res) => {
+  const { UserId } = req.params;
+  try {
+    const user = await User.findOne({
+      where: {
+        UserId,
+      },
+    });
+    if (!user) {
+      return res.status(404).send({ message: "User not found" });
+    }
+
+    if (user.BlockedAt) {
+      return res.status(400).send({ message: "User is already banned" });
+    }
+
+    user.BlockedAt = new Date();
+    await user.save();
+    await cacheManager.invalidateCache();
+    return res.status(200).send({ message: "User banned successfully" });
+  } catch (error) {
+    handleErrorResponse(res, 500, error);
+  }
+};
+const unbanUser = async (req, res) => {
+  const { UserId } = req.params;
+  try {
+    const user = await User.findOne({
+      where: {
+        UserId,
+      },
+    });
+    if (!user) {
+      return res.status(404).send({ message: "User not found" });
+    }
+    if (!user.BlockedAt) {
+      return res.status(400).send({ message: "User is not banned" });
+    }
+
+    user.BlockedAt = null;
+    await user.save();
+    await cacheManager.invalidateCache();
+    return res.status(200).send({ message: "User unbanned successfully" });
+  } catch (error) {
+    handleErrorResponse(res, 500, error);
+  }
+};
 module.exports = {
   addProductToCart,
+  banUser,
   cancelOrder,
   changeEmail,
   changePassword,
@@ -1101,9 +1179,11 @@ module.exports = {
   getUserDetail,
   getUserVouchers,
   removeProductInCart,
+  restoreUser,
+  unbanUser,
   updateProductInCart,
   updateProfile,
   updateUser,
   uploadAvatar,
-  restoreUser,
+  verifyUser,
 };

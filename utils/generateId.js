@@ -8,7 +8,7 @@
  */
 const generateId = (length = 12) => {
   const characters =
-    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let randomString = "";
 
   if (length <= 8) {

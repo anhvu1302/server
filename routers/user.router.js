@@ -22,6 +22,9 @@ const {
   cancelOrder,
   deleteUser,
   restoreUser,
+  banUser,
+  unbanUser,
+  verifyUser,
 } = require("../controllers/user.controller");
 const uploadImage = require("../middlewares/upload/uploadImage");
 const authenticate = require("../middlewares/auth/authenticate");
@@ -141,7 +144,24 @@ userRouter.put(
   checkPermission("RESTORE_USER"),
   restoreUser
 );
-
+userRouter.put(
+  "/:UserId/verify",
+  authenticate,
+  checkPermission("VERIFY_USER"),
+  verifyUser
+);
+userRouter.put(
+  "/:UserId/ban",
+  authenticate,
+  checkPermission("BAN_USER"),
+  banUser
+);
+userRouter.put(
+  "/:UserId/unban",
+  authenticate,
+  checkPermission("UNBAN_USER"),
+  unbanUser
+);
 userRouter.post("/:UserId/order", authenticate, createOrder);
 userRouter.delete("/:UserId/order/:OrderId", authenticate, cancelOrder);
 
