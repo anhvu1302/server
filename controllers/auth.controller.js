@@ -287,17 +287,11 @@ const login = async (req, res) => {
     delete formatUser.SecretKey;
     delete formatUser.OTP;
 
-    const jsonData = JSON.stringify({
+    return res.status(200).send({
       message: "Successful",
       userLogin: formatUser,
       token: token,
     });
-    const encrypted = CryptoJS.AES.encrypt(
-      jsonData,
-      process.env.APP_SECRET_KEY
-    ).toString();
-
-    return res.status(200).send(encrypted);
   } catch (error) {
     return handleErrorResponse(res, 500, error);
   }

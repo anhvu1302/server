@@ -37,7 +37,7 @@ module.exports = (sequelize) => {
         },
       },
       ParentCategoryId: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.STRING(4),
         allowNull: true,
         references: {
           model: 'ParentCategory',
